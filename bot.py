@@ -3,7 +3,7 @@ import os
 import shutil
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from loguru import logger
+from telegram.error import BadRequest
 from dotenv import load_dotenv
 load_dotenv()
 import analog
@@ -12,16 +12,22 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+logger = logging.getLogger("bot")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
 
 async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Checking logs...")
-    # download file
-    file = await update.message.reply_to_message.document.get_file()
-    file_path = 'downloaded_file.gz'
-    await file.download_to_drive(file_path)
+    try:
+        # download file
+        file = await update.message.reply_to_message.document.get_file()
+        file_path = 'downloaded_file.gz'
+        await file.download_to_drive(file_path)
+    except BadRequest as e:
+        logger.error(f"Failed to download file: {e}")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Failed to download the file. ({e})")
+        return
     response = "Results:\n"
     # unpack and read file
     try:
@@ -38,8 +44,8 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 response += line + "\n"
             elif line.split('=')[0].startswith('CONFIG_BBG'):
                 response += line + "\n"
-        response += "If none of this part,means no KSU or BBG modules are enabled\n"
-        response += "\nmodule.json content:\n"
+        response += "If none of this part,means no KSU or BBG modules are enabled\n\n"
+        response += "\nmodules.json content:\n"
         for module in module_data:
             if module.get('enabled') == 'true':
                 response += f"Module Name: {module.get('name')}, Version: {module.get('version')}, moduleid: {module.get('id')}\n"

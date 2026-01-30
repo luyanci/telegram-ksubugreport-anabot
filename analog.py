@@ -1,7 +1,10 @@
 import os
 import gzip
 import json
-from loguru import logger
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def unpack_tar_gz(file_path, output_path):
     """Unpacks a .tar.gz file to the specified output path."""

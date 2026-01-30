@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from loguru import logger
@@ -51,7 +52,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
     finally:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
         os.remove(file_path)
-        os.rmdir('./extracted_files')
+        shutil.rmtree('./extracted_files')
         logger.info("Successfully processed all files.")
     
         

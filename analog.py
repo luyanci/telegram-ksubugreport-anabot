@@ -45,7 +45,8 @@ def read_defconfig_gz(file_path):
     """Reads a compressed .defconfig.gz file and returns its content as a list of lines."""
     
     if not os.path.isfile(file_path):
-        raise FileNotFoundError(f"The file {file_path} does not exist.")
+        logger.warning(f"The file {file_path} does not exist.")
+        return []
     
     with gzip.open(file_path, 'rt') as file:
         lines = file.readlines()

@@ -91,7 +91,9 @@ def process_module_json(datas,lang_code):
     content = "```\n"
     for data in datas:
         if data.get('enabled') == 'true':
-            content += "" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+            content += "✅" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+        else:
+            content += "❌" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
     return content + "```\n"
 
 if __name__ == "__main__":

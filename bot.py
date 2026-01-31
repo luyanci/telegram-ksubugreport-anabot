@@ -14,8 +14,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("bot")
 
-split_char = "\n----------------------------------------\n"
-
 async def send_message(chat_id: int, text: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
     if update.effective_chat.type == "supergroup":
         await context.bot.send_message(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, text=text,parse_mode='Markdown')
@@ -33,9 +31,9 @@ def process_file(file_path: str, lang_code: str) -> str:
         basic_lines = analog.read_basic_txt('extracted_files/basic.txt')
         defconfig_lines = analog.read_defconfig_gz('extracted_files/defconfig.gz')
         module_data = analog.read_module_json('extracted_files/modules.json')
-        response += "BASIC.txt:\n"
+        response += "basic.txt:\n"
         response += analog.process_basic_file(basic_lines, lang_code)
-        response += split_char+"defconfig.gz content:\n```\n"
+        response += "defconfig.gz:\n```\n"
         for line in defconfig_lines:
             if line.split('=')[0].startswith('CONFIG_KSU'):
                 response += line + "\n"
@@ -43,7 +41,7 @@ def process_file(file_path: str, lang_code: str) -> str:
                 response += line + "\n"
         
         response += "If none of this part,means no KSU or BBG modules are enabled\n```\n"
-        response += split_char + "modules.json:\n"
+        response += "modules.json:\n"
         response += analog.process_module_json(module_data, lang_code)
     except FileNotFoundError as e:
         logger.info(f"Error processing file: {e}")

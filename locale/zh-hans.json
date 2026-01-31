@@ -22,6 +22,6 @@
     "module_details": "模块名称：{name}, 版本：{version}, 模块ID：{id}",
     "manager_version": "管理器版本: {manager}",
     "selinux_status": "SELinux状态：{status}",
-    "apatch_version": "APatch版本：{status}",
-    "kpatch_version": "KernelPatch版本：{status}"
+    "apatch_version": "APatch版本：{version}",
+    "kpatch_version": "KernelPatch版本：{version}"
 }

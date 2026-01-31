@@ -9,6 +9,7 @@ load_dotenv()
 import analog
 
 langs=analog.langs
+MAX_FILE_SIZE= 50*1024*1024  # 50 MB
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -61,22 +62,33 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
     can_send_files = []
     missing_files = []
     broken_files = []
+    too_large_files = []
+    content=""
     for file in need_files:
         if not os.path.exists(f'extracted_files_{timestamp}/{file}'):
             missing_files.append(file)
+            continue
         elif os.path.getsize(f'extracted_files_{timestamp}/{file}') <= 1000:
             broken_files.append(file)
             continue
+        elif os.path.getsize(f'extracted_files_{timestamp}/{file}') > MAX_FILE_SIZE:
+            too_large_files.append(file)
+            continue
         else:
             can_send_files.append(file)
+            continue
     try:
         if len(can_send_files) != 0:
             for file in can_send_files:
                 await send_document(chat_id=update.effective_chat.id, document_path=f'extracted_files_{timestamp}/{file}', caption=f"File: {file}", context=context, update=update)
         if len(missing_files) != 0:
-            await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['missing_files'].format(files=", ".join(missing_files)), context=context, update=update)
+            content+=langs[lang_code]['missing_files'].format(files=", ".join(missing_files))+"\n"
         if len(broken_files) != 0:
-            await send_message(chat_id=update.effective_chat.id, text=f"The following files are broken or too small to be useful: {', '.join(broken_files)}", context=context, update=update)
+            content+=f"The following files are broken or too small to be useful: {', '.join(broken_files)}\n"
+        if len(too_large_files) != 0:
+            content+=f"The following files are too large to be sent: {', '.join(too_large_files)}\n"
+        if content:
+            await send_message(chat_id=update.effective_chat.id, text=content, context=context, update=update)
     except NetworkError as e:
         await send_message(chat_id=update.effective_chat.id, text=f"Network error occurred while sending files: {e}", context=context, update=update)
         return

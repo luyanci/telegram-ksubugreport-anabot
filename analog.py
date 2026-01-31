@@ -64,7 +64,7 @@ def read_module_json(file_path):
     return data
 
 def process_basic_file(lines,lang_code):
-    content = "```\n"
+    content = "<blockquote expandable>"
     for line in lines:
         if line.startswith("Kernel:"):
             content += langs[lang_code]["kernel_version"].format(version=line.split(': ', 1)[1]) + "\n"
@@ -82,19 +82,19 @@ def process_basic_file(lines,lang_code):
             content += langs[lang_code]["ksu_version"].format(version=line.split(': ', 1)[1]) + "\n"
         elif line.startswith("LKM:"):
             content += langs[lang_code]["ksu_lkm_mode"].format(status=line.split(': ', 1)[1]) + "\n"
-    return content + "```\n"
+    return content + "</blockquote>\n"
 
 def process_defconfig_file(lines,lang_code):
     pass
 
 def process_module_json(datas,lang_code):
-    content = "```\n"
+    content = "<blockquote expandable>"
     for data in datas:
         if data.get('enabled') == 'true':
             content += "✅" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
         else:
             content += "❌" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
-    return content + "```\n"
+    return content + "</blockquote>\n"
 
 if __name__ == "__main__":
     # Example usage

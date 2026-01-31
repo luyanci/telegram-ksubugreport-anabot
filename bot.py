@@ -3,10 +3,12 @@ import os
 import shutil
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from telegram.error import BadRequest
+from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
 import analog
+
+langs=analog.langs
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -16,59 +18,89 @@ logger = logging.getLogger("bot")
 
 async def send_message(chat_id: int, text: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
     if update.effective_chat.type == "supergroup":
-        await context.bot.send_message(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, text=text,parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, text=text,parse_mode='html')
     else:
-        await context.bot.send_message(chat_id=chat_id, text=text,parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text=text,parse_mode='html')
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await send_message(chat_id=update.effective_chat.id, text="Hello! I'm KSU Bugreport Analyzer Bot. Use /checklog to analyze your log files.", context=context, update=update)
-    logger.info(f"User {update.effective_user.id} started the bot. lang: {update.effective_user.language_code}")
+    lang_code = update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'
+    await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['start_message'], context=context, update=update)
+    logger.debug(f"User {update.effective_user.id} started the bot. lang: {update.effective_user.language_code}")
 
-def process_file(file_path: str, lang_code: str) -> str:
+def process_file(file_path: str, lang_code: str,timestamp) -> str:
     response = ""
     try:
-        analog.unpack_tar_gz(file_path, 'extracted_files')
-        basic_lines = analog.read_basic_txt('extracted_files/basic.txt')
-        defconfig_lines = analog.read_defconfig_gz('extracted_files/defconfig.gz')
-        module_data = analog.read_module_json('extracted_files/modules.json')
+        analog.unpack_tar_gz(file_path, f'extracted_files_{timestamp}')
+        basic_lines = analog.read_basic_txt(f'extracted_files_{timestamp}/basic.txt')
+        defconfig_lines = analog.read_defconfig_gz(f'extracted_files_{timestamp}/defconfig.gz')
+        module_data = analog.read_module_json(f'extracted_files_{timestamp}/modules.json')
         response += "basic.txt:\n"
         response += analog.process_basic_file(basic_lines, lang_code)
-        response += "defconfig.gz:\n```\n"
+        response += "defconfig.gz:\n<blockquote expandable>"
         for line in defconfig_lines:
             if line.split('=')[0].startswith('CONFIG_KSU'):
                 response += line + "\n"
             elif line.split('=')[0].startswith('CONFIG_BBG'):
                 response += line + "\n"
         
-        response += "If none of this part,means no KSU or BBG modules are enabled\n```\n"
-        response += "modules.json:\n"
+        response += f"{langs[lang_code]['no_ksu_bbg_config']}\n</blockquote>\n"
+        response += f"{langs[lang_code]['modules_info']}\n"
         response += analog.process_module_json(module_data, lang_code)
     except FileNotFoundError as e:
         logger.info(f"Error processing file: {e}")
-    finally:
-        if os.path.exists('extracted_files'):
-            shutil.rmtree('extracted_files')
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        logger.info("Cleaned up extracted files and downloaded file.")
     return response
 
+async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
+    need_files = ["adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","logcat.txt","oplus.tar.gz","bootlog.tar.gz"]
+    can_send_files = []
+    missing_files = []
+    broken_files = []
+    for file in need_files:
+        if not os.path.exists(f'extracted_files_{timestamp}/{file}'):
+            missing_files.append(file)
+        elif os.path.getsize(f'extracted_files_{timestamp}/{file}') <= 1000:
+            broken_files.append(file)
+            continue
+        else:
+            can_send_files.append(file)
+    try:
+        if len(can_send_files) != 0:
+            for file in can_send_files:
+                await context.bot.send_document(chat_id=update.effective_chat.id, document=open(f'extracted_files_{timestamp}/{file}', 'rb'),caption=f"File: {file}")
+        if len(missing_files) != 0:
+            await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['missing_files'].format(files=", ".join(missing_files)), context=context, update=update)
+        if len(broken_files) != 0:
+            await send_message(chat_id=update.effective_chat.id, text=f"The following files are broken or too small to be useful: {', '.join(broken_files)}", context=context, update=update)
+    except NetworkError as e:
+        await send_message(chat_id=update.effective_chat.id, text=f"Network error occurred while sending files: {e}", context=context, update=update)
+        return
+
 async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await send_message(chat_id=update.effective_chat.id, text="Checking logs", context=context, update=update)
+    chatid = update.effective_chat.id
+    timestamp = int(update.message.date.timestamp())
+    lang_code = update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'
+    await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['logcheck_message'], context=context, update=update)
     try:
         # download file
         if not update.message.reply_to_message or not update.message.reply_to_message.document:
-            await send_message(chat_id=update.effective_chat.id, text="Please reply to a message containing the log file.", context=context, update=update)
+            await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['no_file_error'], context=context, update=update)
             return
         file = await update.message.reply_to_message.document.get_file()
-        file_path = 'downloaded_file.gz'
+        file_path = f'downloaded_file_{chatid}_{timestamp}.gz'
         await file.download_to_drive(file_path)
     except BadRequest as e:
         logger.error(f"Failed to download file: {e}")
-        await send_message(chat_id=update.effective_chat.id, text=f"Failed to download the file. ({e})", context=context, update=update)
+        await send_message(chat_id=update.effective_chat.id, text=f"Failed to download the file. (TG API Returned:{e})", context=context, update=update)
         return
-    response = "Results:\n" + process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}")
+    response = "Results:\n" + process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
     await send_message(chat_id=update.effective_chat.id, text=response, context=context, update=update)
+    await send_need_files(timestamp, lang_code, context, update)
+    # clean up
+    if os.path.exists('extracted_files_'+str(timestamp)):
+        shutil.rmtree('extracted_files_'+str(timestamp))
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    logger.info("Cleaned up extracted files and downloaded file.")
     
 if __name__ == '__main__':
     application = ApplicationBuilder().token(os.getenv('BOT_TOKEN')).build()

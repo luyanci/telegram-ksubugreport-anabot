@@ -15,7 +15,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-logger = logging.getLogger("bot")
+logger = logging.getLogger("tgbot")
 
 async def send_message(chat_id: int, text: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
     if update.effective_chat.type == "supergroup":
@@ -43,14 +43,8 @@ def process_file(file_path: str, lang_code: str,timestamp) -> str:
         module_data = analog.read_module_json(f'extracted_files_{timestamp}/modules.json')
         response += "basic.txt:\n"
         response += analog.process_basic_file(basic_lines, lang_code)
-        response += "defconfig.gz:\n<blockquote expandable>"
-        for line in defconfig_lines:
-            if line.split('=')[0].startswith('CONFIG_KSU'):
-                response += line + "\n"
-            elif line.split('=')[0].startswith('CONFIG_BBG'):
-                response += line + "\n"
-        
-        response += f"{langs[lang_code]['no_ksu_bbg_config']}\n</blockquote>\n"
+        response += "defconfig.gz:\n"
+        response += analog.process_defconfig_file(defconfig_lines, lang_code)
         response += f"{langs[lang_code]['modules_info']}\n"
         response += analog.process_module_json(module_data, lang_code)
     except FileNotFoundError as e:

@@ -76,16 +76,36 @@ def process_basic_file(lines,lang_code):
             content += langs[lang_code]["device_codename"].format(codename=line.split(': ', 1)[1]) + "\n"
         elif line.startswith("Machine:"):
             content += langs[lang_code]["device_arch"].format(arch=line.split(': ', 1)[1]) + "\n"
-        elif line.startswith("SafeMode:"):
-            content += langs[lang_code]["ksu_safe_mode"].format(safemode=line.split(': ', 1)[1]) + "\n"
+        elif line.startswith("SELinux:"):
+            content += langs[lang_code]["selinux_status"].format(status=line.split(': ', 1)[1]) + "\n"
+        elif line.startswith("Manager:"):
+            content += langs[lang_code]["manager_version"].format(manager=line.split(': ', 1)[1]) + "\n"
         elif line.startswith("KernelSU:"):
             content += langs[lang_code]["ksu_version"].format(version=line.split(': ', 1)[1]) + "\n"
         elif line.startswith("LKM:"):
             content += langs[lang_code]["ksu_lkm_mode"].format(status=line.split(': ', 1)[1]) + "\n"
+        elif line.startswith("APatch:"):
+            content += langs[lang_code]["apatch_version"].format(version=line.split(': ', 1)[1]) + "\n"
+        elif line.startswith("KPatch:"):
+            content += langs[lang_code]["kpatch_version"].format(version=line.split(': ', 1)[1]) + "\n"
+        elif line.startswith("SafeMode:"):
+            content += langs[lang_code]["safe_mode"].format(safemode=line.split(': ', 1)[1]) + "\n"
+        
     return content + "</blockquote>\n"
 
 def process_defconfig_file(lines,lang_code):
-    pass
+    response = "<blockquote expandable>"
+    blank = True
+    for line in lines:
+        if line.split('=')[0].startswith('CONFIG_KSU'):
+            blank = False
+            response += line + "\n"
+        elif line.split('=')[0].startswith('CONFIG_BBG'):
+            blank = False
+            response += line + "\n"
+    if blank:
+        response += f"{langs[lang_code]['no_ksu_bbg_config']}\n"
+    return response + "</blockquote>\n"
 
 def process_module_json(datas,lang_code):
     content = "<blockquote expandable>"

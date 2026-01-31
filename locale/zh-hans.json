@@ -13,11 +13,15 @@
     "device_codename": "设备代号：{codename}",
     "device_arch": "设备架构：{arch}",
     "fingerprint": "设备指纹：{fingerprint}",
-    "ksu_safe_mode": "KSU安全模式: {safemode}",
+    "safe_mode": "安全模式: {safemode}",
     "ksu_lkm_mode": "KSU LKM状态：{status}",
     "ksu_version": "KSU版本：{version}",
     "bbg_version": "BBG版本：{version}",
     "no_ksu_bbg_config": "如果这里没有任何显示，代表着未找到KSU或BBG配置。",
     "modules_json_content": "modules.json内容：",
-    "module_details": "模块名称：{name}, 版本：{version}, 模块ID：{id}"
+    "module_details": "模块名称：{name}, 版本：{version}, 模块ID：{id}",
+    "manager_version": "管理器版本: {manager}",
+    "selinux_status": "SELinux状态：{status}",
+    "apatch_version": "APatch版本：{status}",
+    "kpatch_version": "KernelPatch版本：{status}"
 }

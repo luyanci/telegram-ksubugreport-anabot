@@ -13,11 +13,15 @@
     "device_codename": "device codename: {codename}",
     "device_arch": "device architecture: {arch}",
     "fingerprint": "device fingerprint: {fingerprint}",
-    "ksu_safe_mode": "KSU safe mode: {safemode}",
+    "safe_mode": "safe mode: {safemode}",
     "ksu_lkm_mode": "KSU LKM mode: {status}",
     "ksu_version": "KSU version: {version}",
     "bbg_version": "BBG version: {version}",
     "no_ksu_bbg_config": "if not showing any config,that means no KSU or BBG configuration found.",
     "modules_json_content": "modules.json content:",
-    "module_details": "module name: {name}, version: {version}, module id: {id}"
+    "module_details": "module name: {name}, version: {version}, module id: {id}",
+    "manager_version": "manager: {manager}",
+    "selinux_status": "SELinux status: {status}",
+    "apatch_version": "APatch version: {version}",
+    "kpatch_version": "KernelPatch version: {version}"
 }

@@ -1,0 +1,23 @@
+{
+    "start_command": "开始",
+    "logcheck_command": "日志检查",
+    "help_command": "帮助",
+    "start_message": "我是一个机器人，请和我聊天！",
+    "logcheck_message": "正在检查日志...",
+    "no_file_error": "请回复一条包含日志文件的消息。",
+    "file_processing_error": "处理文件时出错：{error}",
+    "no_relevant_info": "未找到相关的KSU或BBG配置。",
+    "modules_info": "已安装的模块信息：",
+    "kernel_version": "内核版本：{version}",
+    "device_model": "设备型号：{model}",
+    "device_codename": "设备代号：{codename}",
+    "device_arch": "设备架构：{arch}",
+    "fingerprint": "设备指纹：{fingerprint}",
+    "ksu_safe_mode": "KSU安全模式: {safemode}",
+    "ksu_lkm_mode": "KSU LKM状态：{status}",
+    "ksu_version": "KSU版本：{version}",
+    "bbg_version": "BBG版本：{version}",
+    "no_ksu_bbg_config": "未找到KSU或BBG配置。",
+    "modules_json_content": "modules.json内容：",
+    "module_details": "模块名称：{name}, 版本：{version}, 模块ID：{id}"
+}

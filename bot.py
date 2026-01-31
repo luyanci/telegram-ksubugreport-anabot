@@ -22,6 +22,12 @@ async def send_message(chat_id: int, text: str, context: ContextTypes.DEFAULT_TY
     else:
         await context.bot.send_message(chat_id=chat_id, text=text,parse_mode='html')
 
+async def send_document(chat_id: int, document_path: str, caption: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
+    if update.effective_chat.type == "supergroup":
+        await context.bot.send_document(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, document=open(document_path, 'rb'), caption=caption)
+    else:
+        await context.bot.send_document(chat_id=chat_id, document=open(document_path, 'rb'), caption=caption)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'
     await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['start_message'], context=context, update=update)
@@ -66,7 +72,7 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
     try:
         if len(can_send_files) != 0:
             for file in can_send_files:
-                await context.bot.send_document(chat_id=update.effective_chat.id, document=open(f'extracted_files_{timestamp}/{file}', 'rb'),caption=f"File: {file}")
+                await send_document(chat_id=update.effective_chat.id, document_path=f'extracted_files_{timestamp}/{file}', caption=f"File: {file}", context=context, update=update)
         if len(missing_files) != 0:
             await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['missing_files'].format(files=", ".join(missing_files)), context=context, update=update)
         if len(broken_files) != 0:

@@ -7,9 +7,8 @@ from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
 import analog
-import locates
+from locates import langs
 
-langs=locates.langs
 MAX_FILE_SIZE= 50*1024*1024  # 50 MB
 
 logging.basicConfig(
@@ -31,7 +30,7 @@ async def send_document_grp(chat_id: int, document_grp: list[InputMediaDocument]
         await context.bot.send_media_group(chat_id=chat_id, media=document_grp)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang_code = update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'
+    lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
     await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['start_message'], context=context, update=update)
     logger.debug(f"User {update.effective_user.id} started the bot. lang: {update.effective_user.language_code}")
 
@@ -53,13 +52,20 @@ def process_file(file_path: str, lang_code: str,timestamp) -> str:
     return response
 
 async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
-    need_files = ["adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","logcat.txt","oplus.tar.gz","bootlog.tar.gz"]
+    need_files = ["ap_tree.txt","adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","logcat.txt","oplus.tar.gz","bootlog.tar.gz"]
     can_send_files = []
     missing_files = []
     broken_files = []
     too_large_files = []
     file_grp = []
     content=""
+    
+    # APatch compatibility check,if one of the two files is missing,remove it from need_files
+    if not os.path.exists(f'extracted_files_{timestamp}/ap_tree.txt'):
+        need_files.remove("ap_tree.txt")
+    elif not os.path.exists(f'extracted_files_{timestamp}/adb_tree.txt'):
+        need_files.remove("adb_tree.txt")
+    
     for file in need_files:
         if not os.path.exists(f'extracted_files_{timestamp}/{file}'):
             missing_files.append(file)
@@ -94,7 +100,7 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
 async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chatid = update.effective_chat.id
     timestamp = int(update.message.date.timestamp())
-    lang_code = update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'
+    lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
     await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['logcheck_message'], context=context, update=update)
     try:
         # download file

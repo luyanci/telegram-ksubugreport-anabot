@@ -55,32 +55,36 @@ def read_module_json(file_path):
     return data
 
 def process_basic_file(lines,lang_code):
+    def parse_line_value(line):
+        parts = line.split(': ', 1)
+        return parts[1] if len(parts) >= 2 else ""
+    
     content = "<blockquote expandable>"
     for line in lines:
         if line.startswith("Kernel:"):
-            content += langs[lang_code]["kernel_version"].format(version=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["kernel_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("FINGERPRINT:"):
-            content += langs[lang_code]["fingerprint"].format(fingerprint=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["fingerprint"].format(fingerprint=parse_line_value(line)) + "\n"
         elif line.startswith("MODEL:"):
-            content += langs[lang_code]["device_model"].format(model=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["device_model"].format(model=parse_line_value(line)) + "\n"
         elif line.startswith("PRODUCT:"):
-            content += langs[lang_code]["device_codename"].format(codename=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["device_codename"].format(codename=parse_line_value(line)) + "\n"
         elif line.startswith("Machine:"):
-            content += langs[lang_code]["device_arch"].format(arch=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["device_arch"].format(arch=parse_line_value(line)) + "\n"
         elif line.startswith("SELinux:"):
-            content += langs[lang_code]["selinux_status"].format(status=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["selinux_status"].format(status=parse_line_value(line)) + "\n"
         elif line.startswith("Manager:"):
-            content += langs[lang_code]["manager_version"].format(manager=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["manager_version"].format(manager=parse_line_value(line)) + "\n"
         elif line.startswith("KernelSU:"):
-            content += langs[lang_code]["ksu_version"].format(version=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["ksu_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("LKM:"):
-            content += langs[lang_code]["ksu_lkm_mode"].format(status=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["ksu_lkm_mode"].format(status=parse_line_value(line)) + "\n"
         elif line.startswith("APatch:"):
-            content += langs[lang_code]["apatch_version"].format(version=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["apatch_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("KPatch:"):
-            content += langs[lang_code]["kpatch_version"].format(version=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["kpatch_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("SafeMode:"):
-            content += langs[lang_code]["safe_mode"].format(safemode=line.split(': ', 1)[1]) + "\n"
+            content += langs[lang_code]["safe_mode"].format(safemode=parse_line_value(line)) + "\n"
         
     return content + "</blockquote>\n"
 
@@ -100,11 +104,14 @@ def process_defconfig_file(lines,lang_code):
 
 def process_module_json(datas,lang_code):
     content = "<blockquote expandable>"
-    for data in datas:
-        if data.get('enabled') == 'true':
-            content += "✅" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
-        else:
-            content += "❌" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+    if len(datas) != 0:
+        for data in datas:
+            if data.get('enabled') == 'true':
+                content += "✅" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+            else:
+                content += "❌" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+    else:
+        content += f"{langs[lang_code]['no_modules_found']}\n"
     return content + "</blockquote>\n"
 
 if __name__ == "__main__":

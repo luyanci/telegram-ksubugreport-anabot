@@ -1,7 +1,7 @@
 import logging
 import os
 import shutil
-from telegram import Update
+from telegram import Update,InputMediaDocument
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
@@ -24,11 +24,11 @@ async def send_message(chat_id: int, text: str, context: ContextTypes.DEFAULT_TY
     else:
         await context.bot.send_message(chat_id=chat_id, text=text,parse_mode='html')
 
-async def send_document(chat_id: int, document_path: str, caption: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
+async def send_document_grp(chat_id: int, document_grp: list[InputMediaDocument], context: ContextTypes.DEFAULT_TYPE, update: Update):
     if update.effective_chat.type == "supergroup":
-        await context.bot.send_document(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, document=open(document_path, 'rb'), caption=caption)
+        await context.bot.send_media_group(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, media=document_grp)
     else:
-        await context.bot.send_document(chat_id=chat_id, document=open(document_path, 'rb'), caption=caption)
+        await context.bot.send_media_group(chat_id=chat_id, media=document_grp)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'
@@ -58,6 +58,7 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
     missing_files = []
     broken_files = []
     too_large_files = []
+    file_grp = []
     content=""
     for file in need_files:
         if not os.path.exists(f'extracted_files_{timestamp}/{file}'):
@@ -73,19 +74,21 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
             can_send_files.append(file)
             continue
     try:
-        if len(can_send_files) != 0:
-            for file in can_send_files:
-                await send_document(chat_id=update.effective_chat.id, document_path=f'extracted_files_{timestamp}/{file}', caption=f"File: {file}", context=context, update=update)
         if len(missing_files) != 0:
             content+=langs[lang_code]['missing_files'].format(files=", ".join(missing_files))+"\n"
         if len(broken_files) != 0:
-            content+=f"The following files are broken or too small to be useful: {', '.join(broken_files)}\n"
+            content+=langs[lang_code]['broken_files'].format(files=", ".join(broken_files))+"\n"
         if len(too_large_files) != 0:
-            content+=f"The following files are too large to be sent: {', '.join(too_large_files)}\n"
-        if content:
-            await send_message(chat_id=update.effective_chat.id, text=content, context=context, update=update)
+            content+=langs[lang_code]['too_large_files'].format(files=", ".join(too_large_files))+"\n"
+        if len(can_send_files) != 0:
+            for file in can_send_files:
+                if file == can_send_files[-1]:
+                    file_grp.append(InputMediaDocument(media=open(f'extracted_files_{timestamp}/{file}', "rb"),caption=f"File: {file}\n{content}"))
+                else:
+                    file_grp.append(InputMediaDocument(media=open(f'extracted_files_{timestamp}/{file}', "rb"),caption=f"File: {file}"))
+            await send_document_grp(chat_id=update.effective_chat.id,document_grp=file_grp, context=context, update=update)
     except NetworkError as e:
-        await send_message(chat_id=update.effective_chat.id, text=f"Network error occurred while sending files: {e}", context=context, update=update)
+        await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['network_error'].format(error=e), context=context, update=update)
         return
 
 async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -103,7 +106,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await file.download_to_drive(file_path)
     except BadRequest as e:
         logger.error(f"Failed to download file: {e}")
-        await send_message(chat_id=update.effective_chat.id, text=f"Failed to download the file. (TG API Returned:{e})", context=context, update=update)
+        await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['download_error'].format(error=f"TG API Returned:{e}"), context=context, update=update)
         return
     response = "Results:\n" + process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
     await send_message(chat_id=update.effective_chat.id, text=response, context=context, update=update)

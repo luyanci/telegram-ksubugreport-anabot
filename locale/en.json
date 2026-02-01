@@ -6,6 +6,8 @@
     "logcheck_message": "Checking logs...",
     "no_file_error": "Please reply to a message containing the log file.",
     "file_processing_error": "Error processing file: {error}",
+    "network_error": "Network error occurred while sending files: {error}",
+    "download_error": "Error downloading file: {error}",
     "missing_files": "Missing files in bug report: {files}",
     "modules_info": "Installed modules information:",
     "kernel_version": "kernel version: {version}",

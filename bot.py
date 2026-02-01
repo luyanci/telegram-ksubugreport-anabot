@@ -7,8 +7,9 @@ from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
 import analog
+import locates
 
-langs=analog.langs
+langs=locates.langs
 MAX_FILE_SIZE= 50*1024*1024  # 50 MB
 
 logging.basicConfig(

@@ -32,14 +32,7 @@ async def send_document_grp(chat_id: int, document_grp: list[InputMediaDocument]
     return ret
         
 async def edit_message_text(message, text: str):
-    return await message.edit_text(text=text,parse_mode='html')
-
-async def set_bot_status(context: ContextTypes.DEFAULT_TYPE,update: Update, aciton: str):
-    if update.effective_chat.type == "supergroup":
-        return await context.bot.send_chat_action(chat_id=update.effective_chat.id, message_thread_id=update.effective_message.message_thread_id, action=aciton)
-    else:
-        return await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=aciton)
-    
+    return await message.edit_text(text=text,parse_mode='html')    
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
@@ -104,7 +97,7 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
                     file_grp.append(InputMediaDocument(media=open(f'extracted_files_{timestamp}/{file}', "rb"),caption=f"File: {file}\n\n{content}"))
                 else:
                     file_grp.append(InputMediaDocument(media=open(f'extracted_files_{timestamp}/{file}', "rb"),caption=f"File: {file}"))
-            await set_bot_status(context, update, action="upload_document")
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="upload_document")
             await send_document_grp(chat_id=update.effective_chat.id,document_grp=file_grp, context=context, update=update)
     except BadRequest as e:
         logger.error(f"Failed to send files: {e}")
@@ -125,7 +118,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not update.message.reply_to_message or not update.message.reply_to_message.document:
             await edit_message_text(msg, langs[lang_code]['no_file_error'])
             return
-        await set_bot_status(context, update, action="typing")
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         file = await update.message.reply_to_message.document.get_file()
         file_path = f'downloaded_file_{chatid}_{timestamp}.gz'
         await file.download_to_drive(file_path)

@@ -5,6 +5,7 @@
     "file_processing_error": "Error processing file: {error}",
     "network_error": "Network error occurred while sending files: {error}",
     "download_error": "Error downloading file: {error}",
+    "unexpected_error": "An unexpected error occurred: {error}",
     "missing_files": "Missing files in bug report: {files}",
     "too_large_files": "The following files are too large to be sent: {files}",
     "broken_files": "The following files are broken or too small to be useful: {files}",

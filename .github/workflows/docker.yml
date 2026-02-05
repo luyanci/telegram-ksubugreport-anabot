@@ -6,7 +6,7 @@ on:
     branches:
       - main # default branch
     paths:
-      - ./*.py
+      - "*.py"
       - locale/**
       - Dockerfile
       - .github/workflows/docker.yml

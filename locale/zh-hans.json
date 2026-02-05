@@ -8,6 +8,7 @@
     "file_processing_error": "处理文件时出错：{error}",
     "network_error": "发送文件时发生网络错误：{error}",
     "download_error": "下载文件时出错：{error}",
+    "unexpected_error": "发生意外错误：{error}",
     "missing_files": "bugreport文件缺少：{files}",
     "too_large_files": "以下文件过大，无法发送：{files}",
     "broken_files": "以下文件损坏或过小，无法使用：{files}",

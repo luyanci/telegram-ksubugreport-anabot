@@ -128,6 +128,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except BadRequest as e:
         logger.error(f"Failed to download file: {e}")
         await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['download_error'].format(error=str(e)), context=context, update=update)
+        await msg.delete()
         return
     except Exception as e:
         logger.error(f"Unexpected error: {e}")

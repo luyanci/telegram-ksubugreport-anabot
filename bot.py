@@ -57,7 +57,7 @@ def process_file(file_path: str, lang_code: str,timestamp) -> str:
     return response
 
 async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
-    need_files = ["modules.json","ap_tree.txt","adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","logcat.txt","oplus.tar.gz","bootlog.tar.gz"]
+    need_files = ["modules.json","ap_tree.txt","adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","oplus.tar.gz","bootlog.tar.gz"]
     can_send_files = []
     missing_files = []
     broken_files = []
@@ -99,8 +99,12 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
                     file_grp.append(InputMediaDocument(media=open(f'extracted_files_{timestamp}/{file}', "rb"),caption=f"File: {file}"))
             await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="upload_document")
             await send_document_grp(chat_id=update.effective_chat.id,document_grp=file_grp, context=context, update=update)
+    except BadRequest as e:
+        logger.error(f"Failed to send files: {e}")
+        await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['file_processing_error'].format(error=str(e)), context=context, update=update)
+        return
     except NetworkError as e:
-        await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['network_error'].format(error=e), context=context, update=update)
+        logger.error(f"Network error while sending files: {e}")
         return
 
 async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -127,7 +131,6 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['unexpected_error'].format(error=e), context=context, update=update)
         return
     finally:
         # clean up
@@ -135,7 +138,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
             shutil.rmtree('extracted_files_'+str(timestamp))
         if os.path.exists(file_path):
             os.remove(file_path)
-        logger.info("{}_{} - Cleaned up extracted files and downloaded file.".format(chatid,timestamp))
+        logger.info("{}_{}: Cleaned up extracted files and downloaded file.".format(chatid,timestamp))
     
 if __name__ == '__main__':
     application = ApplicationBuilder().token(os.getenv('BOT_TOKEN')).build()

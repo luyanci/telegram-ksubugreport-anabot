@@ -1,3 +1,5 @@
+import os,httpx
+import asyncio
 from telegram import Update,InputMediaDocument,Message
 from telegram.ext import ContextTypes
 
@@ -20,3 +22,20 @@ async def send_document_grp(chat_id: int, document_grp: list[InputMediaDocument]
 async def edit_message_text(message, text: str):
     return await message.edit_text(text=text,parse_mode='html')
 
+async def streamed_download_file(file, file_path: str,message: Message, context: ContextTypes.DEFAULT_TYPE, update: Update):
+    link = file._get_encoded_url()
+    last_update_time = 0
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        cli = client.build_request("GET", link)
+        r = await client.send(cli, stream=True)
+        r.raise_for_status()
+        size = int(r.headers.get("Content-Length", 0))
+        downloaded_size=0
+        with open(file_path,'wb') as f:
+            async for chunk in r.aiter_bytes(1024*512):
+                f.write(chunk)
+                downloaded_size += len(chunk)
+                now = asyncio.get_event_loop().time()
+                if now - last_update_time >= 1:
+                    await edit_message_text(message,f"Downloading... \n {downloaded_size/MB:.2f} / {size/MB:.2f} MB ({downloaded_size/size*100:.2f}%)")
+                    last_update_time = now

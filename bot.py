@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
-from api_compat import send_message, send_document_grp, edit_message_text
+from api_compat import send_message, send_document_grp, edit_message_text,streamed_download_file
 import analog
 from locates import langs
 
@@ -65,7 +65,8 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         file = await update.message.reply_to_message.document.get_file()
         file_path = f'downloaded_file_{chatid}_{timestamp}.gz'
-        await file.download_to_drive(file_path)
+        await streamed_download_file(file, file_path, msg, context, update)
+
         response = "Results:\n" + analog.process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
         await edit_message_text(msg, response)
         await send_need_files(timestamp, lang_code, context, update)

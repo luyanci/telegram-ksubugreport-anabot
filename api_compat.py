@@ -1,7 +1,6 @@
 from telegram import Update,InputMediaDocument,Message
 from telegram.ext import ContextTypes
 
-timeout=httpx.Timeout(10.0)
 MB = 1024*1024
 
 async def send_message(chat_id: int, text: str, context: ContextTypes.DEFAULT_TYPE, update: Update):

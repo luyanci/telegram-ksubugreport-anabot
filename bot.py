@@ -6,6 +6,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
+from api_compat import send_message, send_document_grp, edit_message_text,streamed_download_file
 import analog
 from locates import langs
 
@@ -17,73 +18,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger("tgbot")
 
-async def send_message(chat_id: int, text: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
-    if update.effective_chat.type == "supergroup":
-        ret = await context.bot.send_message(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, text=text,parse_mode='html')
-    else:
-        ret = await context.bot.send_message(chat_id=chat_id, text=text,parse_mode='html')
-    return ret
-
-async def send_document_grp(chat_id: int, document_grp: list[InputMediaDocument], context: ContextTypes.DEFAULT_TYPE, update: Update):
-    if update.effective_chat.type == "supergroup":
-        ret = await context.bot.send_media_group(chat_id=chat_id, message_thread_id=update.effective_message.message_thread_id, media=document_grp)
-    else:
-        ret = await context.bot.send_media_group(chat_id=chat_id, media=document_grp)
-    return ret
-        
-async def edit_message_text(message, text: str):
-    return await message.edit_text(text=text,parse_mode='html')    
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
     await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['start_message'], context=context, update=update)
     logger.debug(f"User {update.effective_user.id} started the bot. lang: {update.effective_user.language_code}")
 
-def process_file(file_path: str, lang_code: str,timestamp) -> str:
-    response = ""
-    try:
-        analog.unpack_tar_gz(file_path, f'extracted_files_{timestamp}')
-        basic_lines = analog.read_basic_txt(f'extracted_files_{timestamp}/basic.txt')
-        defconfig_lines = analog.read_defconfig_gz(f'extracted_files_{timestamp}/defconfig.gz')
-        module_data = analog.read_module_json(f'extracted_files_{timestamp}/modules.json')
-        response += "basic.txt:\n"
-        response += analog.process_basic_file(basic_lines, lang_code)
-        response += "defconfig.gz:\n"
-        response += analog.process_defconfig_file(defconfig_lines, lang_code)
-        response += f"{langs[lang_code]['modules_info']}\n"
-        response += analog.process_module_json(module_data, lang_code)
-    except FileNotFoundError as e:
-        logger.info(f"Error processing file: {e}")
-    return response
-
 async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.DEFAULT_TYPE, update: Update):
-    need_files = ["modules.json","ap_tree.txt","adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","oplus.tar.gz","bootlog.tar.gz"]
-    can_send_files = []
-    missing_files = []
-    broken_files = []
-    too_large_files = []
     file_grp = []
     content=""
-    
-    # APatch compatibility check,if one of the two files is missing,remove it from need_files
-    if not os.path.exists(f'extracted_files_{timestamp}/ap_tree.txt'):
-        need_files.remove("ap_tree.txt")
-    elif not os.path.exists(f'extracted_files_{timestamp}/adb_tree.txt'):
-        need_files.remove("adb_tree.txt")
-    
-    for file in need_files:
-        if not os.path.exists(f'extracted_files_{timestamp}/{file}'):
-            missing_files.append(file)
-            continue
-        elif os.path.getsize(f'extracted_files_{timestamp}/{file}') < 1000:
-            broken_files.append(file)
-            continue
-        elif os.path.getsize(f'extracted_files_{timestamp}/{file}') > MAX_FILE_SIZE:
-            too_large_files.append(file)
-            continue
-        else:
-            can_send_files.append(file)
-            continue
+    can_send_files, missing_files, broken_files, too_large_files = analog.process_need_send_file(timestamp)
+
     try:
         if len(missing_files) != 0:
             content+=langs[lang_code]['missing_files'].format(files=", ".join(missing_files))+"\n"

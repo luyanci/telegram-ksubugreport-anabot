@@ -19,7 +19,7 @@
     "ksu_lkm_mode": "KSU LKM mode: {status}",
     "ksu_version": "KSU version: {version}",
     "bbg_version": "BBG version: {version}",
-    "no_ksu_bbg_config": "No KSU or BBG configuration found.",
+    "no_ksu_bbg_config": "No related configuration found.",
     "modules_json_content": "modules.json content:",
     "module_details": "module name: {name}, version: {version}, module id: {id}",
     "no_modules_found": "No installed modules found.",

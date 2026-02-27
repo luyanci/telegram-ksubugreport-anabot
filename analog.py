@@ -44,9 +44,12 @@ def read_defconfig_gz(file_path):
         logger.warning(f"The file {file_path} does not exist.")
         return []
     
-    with gzip.open(file_path, 'rt') as file:
-        lines = file.readlines()
-    
+    if file_path.endswith('.gz'):
+        with gzip.open(file_path, 'rt') as file:
+            lines = file.readlines()
+    else:
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
     return [line.strip() for line in lines] 
 
 def read_module_json(file_path):
@@ -103,6 +106,12 @@ def process_defconfig_file(lines,lang_code):
         elif line.split('=')[0].startswith('CONFIG_BBG'):
             blank = False
             response += line + "\n"
+        elif line.split('=')[0].find('CONFIG_OVERLAY') != -1:
+            blank = False
+            response += line + "\n"
+        elif line.split('=')[0].find('CONFIG_TMPFS') != -1:
+            blank = False
+            response += line + "\n"
     if blank:
         response += f"{langs[lang_code]['no_ksu_bbg_config']}\n"
     return response + "</blockquote>\n"
@@ -112,12 +121,64 @@ def process_module_json(datas,lang_code):
     if len(datas) != 0:
         for data in datas:
             if data.get('enabled') == 'true':
-                content += "✅" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+                content += "✅" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
             else:
-                content += "❌" +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+                content += "❌" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
     else:
         content += f"{langs[lang_code]['no_modules_found']}\n"
     return content + "</blockquote>\n"
+
+def process_file(file_path: str, lang_code: str,timestamp) -> str:
+    response = ""
+    try:
+        unpack_tar_gz(file_path, f'extracted_files_{timestamp}')
+        basic_lines = read_basic_txt(f'extracted_files_{timestamp}/basic.txt')
+        if os.path.exists(f'extracted_files_{timestamp}/defconfig.gz'):
+            defconfig_lines = read_defconfig_gz(f'extracted_files_{timestamp}/defconfig.gz')
+        elif os.path.exists(f'extracted_files_{timestamp}/defconfig'):
+            defconfig_lines = read_basic_txt(f'extracted_files_{timestamp}/defconfig')
+        module_data = read_module_json(f'extracted_files_{timestamp}/modules.json')
+        response += "basic.txt:\n"
+        response += process_basic_file(basic_lines, lang_code)
+        response += "defconfig:\n"
+        response += process_defconfig_file(defconfig_lines, lang_code)
+        response += f"{langs[lang_code]['modules_info']}\n"
+        response += process_module_json(module_data, lang_code)
+    except FileNotFoundError as e:
+        logger.info(f"Error processing file: {e}")
+    return response
+
+def process_need_send_file(timestamp: int) -> dict[list[str], list[str], list[str], list[str]]:
+    need_files = ["modules.json","ap_tree.txt","adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","oplus.tar.gz","bootlog.tar.gz"]
+    can_send_files = []
+    missing_files = []
+    broken_files = []
+    too_large_files = []
+    AP_COMPAT= False
+    
+    # APatch compatibility check,if one of the two files is missing,remove it from need_files
+    if not os.path.exists(f'extracted_files_{timestamp}/ap_tree.txt'):
+        need_files.remove("ap_tree.txt")
+    elif not os.path.exists(f'extracted_files_{timestamp}/adb_tree.txt'):
+        AP_COMPAT = True
+        need_files.remove("adb_tree.txt")
+    
+    for file in need_files:
+        if not os.path.exists(f'extracted_files_{timestamp}/{file}'):
+            if AP_COMPAT and file in ["adb_details.txt","oplus.tar.gz"]:
+                continue
+            missing_files.append(file)
+            continue
+        elif os.path.getsize(f'extracted_files_{timestamp}/{file}') < 1000:
+            broken_files.append(file)
+            continue
+        elif os.path.getsize(f'extracted_files_{timestamp}/{file}') > MAX_FILE_SIZE:
+            too_large_files.append(file)
+            continue
+        else:
+            can_send_files.append(file)
+            continue
+    return can_send_files, missing_files, broken_files, too_large_files
 
 if __name__ == "__main__":
     # Example usage

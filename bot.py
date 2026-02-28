@@ -2,11 +2,12 @@ import logging
 import os
 import shutil
 from telegram import Update,InputMediaDocument
+from telegram.constants import ChatAction
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
-from api_compat import send_message, send_document_grp, edit_message_text
+from botapi import send_message, send_document_grp, edit_message_text,streamed_download_file
 import analog
 from locates import langs
 
@@ -41,7 +42,7 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
                     file_grp.append(InputMediaDocument(media=open(f'extracted_files_{timestamp}/{file}', "rb"),caption=f"File: {file}\n\n{content}"))
                 else:
                     file_grp.append(InputMediaDocument(media=open(f'extracted_files_{timestamp}/{file}', "rb"),caption=f"File: {file}"))
-            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="upload_document")
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_DOCUMENT)
             await send_document_grp(chat_id=update.effective_chat.id,document_grp=file_grp, context=context, update=update)
     except BadRequest as e:
         logger.error(f"Failed to send files: {e}")
@@ -62,10 +63,11 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not update.message.reply_to_message or not update.message.reply_to_message.document:
             await edit_message_text(msg, langs[lang_code]['no_file_error'])
             return
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
         file = await update.message.reply_to_message.document.get_file()
         file_path = f'downloaded_file_{chatid}_{timestamp}.gz'
-        await file.download_to_drive(file_path)
+        await streamed_download_file(file, file_path, msg, context, update)
+
         response = "Results:\n" + analog.process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
         await edit_message_text(msg, response)
         await send_need_files(timestamp, lang_code, context, update)

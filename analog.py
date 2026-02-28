@@ -100,10 +100,10 @@ def process_defconfig_file(lines,lang_code):
     response = "<blockquote expandable>"
     blank = True
     for line in lines:
-        if line.split('=')[0].startswith('CONFIG_KSU'):
+        if line.split('=')[0].find('CONFIG_KSU') != -1:
             blank = False
             response += line + "\n"
-        elif line.split('=')[0].startswith('CONFIG_BBG'):
+        elif line.split('=')[0].find('CONFIG_BBG') != -1:
             blank = False
             response += line + "\n"
         elif line.split('=')[0].find('CONFIG_OVERLAY') != -1:

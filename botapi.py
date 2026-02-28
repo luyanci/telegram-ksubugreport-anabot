@@ -44,8 +44,9 @@ async def streamed_download_file(file, file_path: str,message: Message, context:
                 downloaded_size += len(chunk)
                 now = asyncio.get_event_loop().time()
                 if now - last_update_time >= 1:
-                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_DOCUMENT)
+                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
                     await edit_message_text(message,f"{langs[lang_code]['logcheck_message']} \n{downloaded_size/MB:.2f} / {size/MB:.2f} MB ({downloaded_size/size*100:.2f}%)")
                     last_update_time = now
-            sleep(1)
-            return
+        await edit_message_text(message,f"{langs[lang_code]['logcheck_message']} \n{downloaded_size/MB:.2f} / {size/MB:.2f} MB (100.00%)!")
+        sleep(3)
+        return

@@ -1,13 +1,14 @@
 import logging
 import os
 import shutil
+import asyncio
 from telegram import Update,InputMediaDocument
 from telegram.constants import ChatAction
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
-from botapi import send_message, send_document_grp, edit_message_text,streamed_download_file
+from botapi import send_message, send_document_grp, edit_message_text,streamed_download_file, wait_for_local_bot_api
 import analog
 from locates import langs
 
@@ -88,8 +89,9 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info("{}_{}: Cleaned up extracted files and downloaded file.".format(chatid,timestamp))
     
 if __name__ == '__main__':
-    application = ApplicationBuilder().token(os.getenv('BOT_TOKEN')).build()
+    asyncio.run(wait_for_local_bot_api())
     
+    application = ApplicationBuilder().base_file_url('http://127.0.0.1:18081/bot').base_file_url('http://127.0.0.1:18081/file/bot').token(os.getenv('BOT_TOKEN')).build()
     start_handler = CommandHandler('start', start)
     logcheck_handler = CommandHandler('checklog', logcheck)
     application.add_handler(start_handler)

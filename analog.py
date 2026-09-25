@@ -8,7 +8,6 @@ MAX_FILE_SIZE= 50*1024*1024  # 50 MB
 
 logger = logging.getLogger(__name__)
 
-
 def unpack_tar_gz(file_path, output_path):
     """Unpacks a .tar.gz file to the specified output path."""
     import tarfile
@@ -57,7 +56,7 @@ def read_module_json(file_path):
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
     
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r' , encoding='utf-8') as file:
         data = json.load(file)
     
     return data
@@ -117,17 +116,24 @@ def process_defconfig_file(lines,lang_code):
     return response + "</blockquote>\n"
 
 def process_module_json(datas,lang_code):
-    content = "<blockquote expandable>"
+    suspicious_modules = [ "hma_oss_zygisk" ]
+    content = ""
     if len(datas) != 0:
         for data in datas:
             if data.get('enabled') == 'true':
-                content += "✅" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+                if data.get('metamodule') is not None:
+                    content = "✅" + " [META] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n" + content
+                elif data.get('id') in suspicious_modules:
+                    content += "⚠️" + " [SUS] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + " " +langs[lang_code]["suspicious_modules_tip"] + "\n"
+                else:
+                    content += "✅" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
             else:
                 content += "❌" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
     else:
         content += f"{langs[lang_code]['no_modules_found']}\n"
-    return content + "</blockquote>\n"
+    return "<blockquote expandable>" + content + "</blockquote>\n"
 
+        
 def process_file(file_path: str, lang_code: str,timestamp) -> str:
     response = ""
     try:
@@ -149,7 +155,7 @@ def process_file(file_path: str, lang_code: str,timestamp) -> str:
     return response
 
 def process_need_send_file(timestamp: int) -> dict[list[str], list[str], list[str], list[str]]:
-    need_files = ["modules.json","ap_tree.txt","adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","oplus.tar.gz","bootlog.tar.gz"]
+    need_files = ["ap_tree.txt","adb_tree.txt","adb_details.txt","pstore.tar.gz","dmesg.txt","oplus.tar.gz","bootlog.tar.gz","dropbox.tar.gz","diag.tar.gz"]
     can_send_files = []
     missing_files = []
     broken_files = []

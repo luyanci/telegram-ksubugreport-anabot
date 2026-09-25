@@ -22,6 +22,7 @@
     "no_ksu_bbg_config": "No related configuration found.",
     "modules_json_content": "modules.json content:",
     "module_details": "module name: {name}, version: {version}, module id: {id}",
+    "suspicious_modules_tip": "Please notice that, this module probably will lead some problem!",
     "no_modules_found": "No installed modules found.",
     "manager_version": "manager: {manager}",
     "selinux_status": "SELinux status: {status}",

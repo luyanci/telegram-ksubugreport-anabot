@@ -25,6 +25,7 @@
     "no_ksu_bbg_config": "未找到相关配置。",
     "modules_json_content": "modules.json内容：",
     "module_details": "模块名称：{name}, 版本：{version}, 模块ID：{id}",
+    "suspicious_modules_tip": "该模块可能导致异常，请注意",
     "no_modules_found": "未找到已安装的模块。",
     "manager_version": "管理器版本: {manager}",
     "selinux_status": "SELinux状态：{status}",

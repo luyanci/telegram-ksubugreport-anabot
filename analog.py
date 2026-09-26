@@ -17,9 +17,9 @@ def unpack_tar_gz(file_path, output_path):
     
     with tarfile.open(file_path, 'r:gz') as tar:
             for file in tar.getmembers():
-                if file.size > MAX_FILE_SIZE:
-                    logger.warning(f"Skipping extraction of {file.name} due to size > {MAX_FILE_SIZE} bytes.")
-                    continue
+                # if file.size > MAX_FILE_SIZE:
+                #     logger.warning(f"Skipping extraction of {file.name} due to size > {MAX_FILE_SIZE} bytes.")
+                #     continue
                 try:
                     tar.extract(file, output_path)
                 except Exception as e:

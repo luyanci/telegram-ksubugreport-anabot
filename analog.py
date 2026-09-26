@@ -178,9 +178,9 @@ def process_need_send_file(timestamp: int) -> dict[list[str], list[str], list[st
         elif os.path.getsize(f'extracted_files_{timestamp}/{file}') < 1000:
             broken_files.append(file)
             continue
-        elif os.path.getsize(f'extracted_files_{timestamp}/{file}') > MAX_FILE_SIZE:
-            too_large_files.append(file)
-            continue
+        # elif os.path.getsize(f'extracted_files_{timestamp}/{file}') > MAX_FILE_SIZE:
+        #     too_large_files.append(file)
+        #     continue
         else:
             can_send_files.append(file)
             continue

@@ -1,4 +1,5 @@
 import os,httpx
+import shutil
 import logging
 import asyncio
 from time import sleep
@@ -34,7 +35,6 @@ async def edit_message_text(message, text: str):
 MB = 1024*1024
 
 @DeprecationWarning
-
 async def streamed_download_file(file, file_path: str,message: Message, context: ContextTypes.DEFAULT_TYPE, update: Update):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
     link = file._get_encoded_url()
@@ -93,4 +93,6 @@ async def wait_for_local_bot_api(BOT_TOKEN: str = os.getenv('BOT_TOKEN')):
     
 def kill_local_bot_api():
     logger.info("Try to kill Bot API...")
+    shutil.rmtree(f"./{os.getenv("BOT_TOKEN")}")
     process.kill()
+    logger.info("Cleaned")

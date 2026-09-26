@@ -12,7 +12,6 @@ from botapi import send_message, send_document_grp, edit_message_text,kill_local
 import analog
 from locates import langs
 
-MAX_FILE_SIZE= 50*1024*1024  # 50 MB
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -65,8 +64,10 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await edit_message_text(msg, langs[lang_code]['no_file_error'])
             return
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
-        file = await update.message.reply_to_message.document.get_file()
+        file = await update.message.reply_to_message.document.get_file(read_timeout=100, write_timeout=100,connect_timeout=100)
         file_path = f'downloaded_file_{chatid}_{timestamp}.gz'
+        file_url = file._get_encoded_url()
+        logger.debug(f"Downloading file from {file_url}")
         await file.download_to_drive(file_path)
         response = "Results:\n" + analog.process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
         await edit_message_text(msg, response)
@@ -85,6 +86,9 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
             shutil.rmtree('extracted_files_'+str(timestamp))
         if os.path.exists(file_path):
             os.remove(file_path)
+        if os.path.exists(file_url):
+            # delete file which is api downloaded
+            os.remove(file_url)
         logger.info("{}_{}: Cleaned up extracted files and downloaded file.".format(chatid,timestamp))
     
 if __name__ == '__main__':
@@ -103,4 +107,5 @@ if __name__ == '__main__':
         application.run_polling()
     finally:
         kill_local_bot_api()
+        logger.info("Bot stopped.")
         

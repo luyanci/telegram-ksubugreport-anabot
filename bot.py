@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from telegram.error import BadRequest,NetworkError
 from dotenv import load_dotenv
 load_dotenv()
-from botapi import send_message, send_document_grp, edit_message_text,streamed_download_file, wait_for_local_bot_api
+from botapi import send_message, send_document_grp, edit_message_text,kill_local_bot_api, wait_for_local_bot_api
 import analog
 from locates import langs
 
@@ -95,4 +95,8 @@ if __name__ == '__main__':
     logcheck_handler = CommandHandler('checklog', logcheck)
     application.add_handler(start_handler)
     application.add_handler(logcheck_handler)
-    application.run_polling()
+    try:
+        application.run_polling()
+    finally:
+        kill_local_bot_api()
+        

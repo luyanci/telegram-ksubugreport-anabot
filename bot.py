@@ -91,7 +91,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == '__main__':
     asyncio.run(wait_for_local_bot_api())
     
-    application = ApplicationBuilder().base_file_url('http://127.0.0.1:18081/bot').base_file_url('http://127.0.0.1:18081/file/bot').token(os.getenv('BOT_TOKEN')).build()
+    application = ApplicationBuilder().base_url('http://127.0.0.1:18081/bot').base_file_url('http://127.0.0.1:18081/file/bot').token(os.getenv('BOT_TOKEN')).build()
     start_handler = CommandHandler('start', start)
     logcheck_handler = CommandHandler('checklog', logcheck)
     application.add_handler(start_handler)

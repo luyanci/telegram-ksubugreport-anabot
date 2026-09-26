@@ -67,8 +67,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
         file = await update.message.reply_to_message.document.get_file()
         file_path = f'downloaded_file_{chatid}_{timestamp}.gz'
-        await streamed_download_file(file, file_path, msg, context, update)
-
+        await file.download_to_drive(file_path)
         response = "Results:\n" + analog.process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
         await edit_message_text(msg, response)
         await send_need_files(timestamp, lang_code, context, update)

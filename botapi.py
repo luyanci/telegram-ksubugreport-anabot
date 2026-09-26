@@ -70,7 +70,7 @@ async def start_local_bot_api():
     
 
 async def wait_for_local_bot_api(BOT_TOKEN: str = os.getenv('BOT_TOKEN')):
-    #await start_local_bot_api()
+    await start_local_bot_api()
     logger.info("Waiting for Telegram Bot API to start...")
     async with httpx.AsyncClient(timeout=timeout) as client:
         for count in range(30):

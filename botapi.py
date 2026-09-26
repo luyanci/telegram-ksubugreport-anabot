@@ -92,4 +92,5 @@ async def wait_for_local_bot_api(BOT_TOKEN: str = os.getenv('BOT_TOKEN')):
         return 
     
 def kill_local_bot_api():
+    logger.info("Try to kill Bot API...")
     process.kill()

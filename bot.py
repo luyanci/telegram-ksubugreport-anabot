@@ -91,9 +91,6 @@ if __name__ == '__main__':
     asyncio.run(wait_for_local_bot_api())
     
     application = ApplicationBuilder() \
-        .get_updates_pool_timeout(60) \
-        .get_updates_read_timeout(10) \
-        .get_updates_connect_timeout(15) \
         .base_url('http://127.0.0.1:18081/bot') \
         .base_file_url('http://127.0.0.1:18081/file/bot') \
         .token(os.getenv('BOT_TOKEN')) \

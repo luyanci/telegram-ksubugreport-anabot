@@ -91,17 +91,25 @@ def process_basic_files(basic_lines,prop_lines,lang_code):
             content += langs[lang_code]["kpatch_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("SafeMode:"):
             content += langs[lang_code]["safe_mode"].format(safemode=parse_line_value(line)) + "\n"
+    
+    
     marketkeys= [
-    "ro.vendor.oneplus.market.name"
+    "ro.vendor.oplus.market.name"
+    "ro.vendor.oplus.market.enname"
     "ro.vivo.market.name",
     "ro.product.marketname",
     "ro.config.marketing_name"
     ]
     
     for line in prop_lines:
+        completed = False
         for key in marketkeys:
             if line.startswith(f"[{key}]"):
                 content = langs[lang_code]["device_model"].format(model=parse_line_value(line)) + "\n" + content
+                completed = True
+                break
+        if completed:
+            break
     return "<blockquote expandable>" + content + "</blockquote>\n"
 
 def process_defconfig_file(lines,lang_code):

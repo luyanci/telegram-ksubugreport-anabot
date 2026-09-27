@@ -16,6 +16,8 @@
 
 **前提条件*：确保你有一个 Telegram Bot Token(可在@BotFather获取)，并且你的服务器环境支持 Python 3.8+。**
 
+更新：现在你需要先编译[tdlib/telegram-bot-api](https://github.com/tdlib/telegram-bot-api)，并将二进制文件命名为`telegram-bot-api-binary`，并将其放置在项目根目录下。
+
 ### Docker 使用
 
 ```bash
@@ -44,6 +46,23 @@ source .venv/bin/activate
 3. **安装依赖**
 
 ```bash
+# 编译telegram-bot-api (https://tdlib.github.io/telegram-bot-api/build.html)
+su -
+apt-get update
+apt-get upgrade
+apt-get install make git zlib1g-dev libssl-dev gperf cmake clang libc++-dev libc++abi-dev
+exit
+git clone --recursive https://github.com/tdlib/telegram-bot-api.git
+cd telegram-bot-api
+rm -rf build
+mkdir build
+cd build
+CXXFLAGS="-stdlib=libc++" CC=/usr/bin/clang CXX=/usr/bin/clang++ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=.. ..
+cmake --build . --target install
+cd ../..
+ls -l telegram-bot-api/bin/telegram-bot-api*
+
+# python 依赖
 pip install -r requirements.txt
 ```
 

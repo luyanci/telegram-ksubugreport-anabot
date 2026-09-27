@@ -133,7 +133,12 @@ def process_defconfig_file(lines,lang_code):
     return response + "</blockquote>\n"
 
 def process_module_json(datas,lang_code):
-    suspicious_modules = [ "hma_oss_zygisk" ]
+    suspicious_modules = [
+        # HMA
+        "hma_oss_zygisk",
+        # One Key Hide related
+        "YH_YC"
+    ]
     content = ""
     if len(datas) != 0:
         for data in datas:
@@ -142,6 +147,9 @@ def process_module_json(datas,lang_code):
                     content = "✅" + " [META] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n" + content
                 elif data.get('id') in suspicious_modules:
                     content += "⚠️" + " [SUS] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + " " +langs[lang_code]["suspicious_modules_tip"] + "\n"
+                elif data.get('id') == "zygisksu" and data.get('name') == "Zygisk Next":
+                    if "DE" in data.get('description'):
+                        content += "⚠️" + " [Enforce Denylist] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + " " +langs[lang_code]["suspicious_modules_tip"] + "\n"
                 else:
                     content += "✅" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
             else:

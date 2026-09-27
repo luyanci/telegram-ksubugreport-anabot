@@ -66,7 +66,7 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
         file = await update.message.reply_to_message.document.get_file(read_timeout=100, write_timeout=100,connect_timeout=100)
         file_path = f'downloaded_file_{chatid}_{timestamp}.gz'
-        file_url = file._get_encoded_url()
+        file_url = file._get_encoded_url().replace("%3A",":")
         logger.debug(f"Downloading file from {file_url}")
         await file.download_to_drive(file_path)
         response = "Results:\n" + analog.process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
@@ -76,6 +76,9 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Failed to download file: {e}")
         await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['download_error'].format(error=str(e)), context=context, update=update)
         await msg.delete()
+        return
+    except UnboundLocalError as e:
+        await edit_message_text(msg, langs[lang_code]['noroot_error'])
         return
     except Exception as e:
         logger.error(f"Unexpected error: {e}")

@@ -3,7 +3,7 @@ import shutil
 import logging
 import asyncio
 from time import sleep
-from telegram import Update,InputMediaDocument,Message
+from telegram import Update,InputMediaDocument,Message,File
 from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
@@ -35,7 +35,7 @@ async def edit_message_text(message, text: str):
 MB = 1024*1024
 
 @DeprecationWarning
-async def streamed_download_file(file, file_path: str,message: Message, context: ContextTypes.DEFAULT_TYPE, update: Update):
+async def streamed_download_file(file: File, file_path: str,message: Message, context: ContextTypes.DEFAULT_TYPE, update: Update):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
     link = file._get_encoded_url()
     last_update_time = 0
@@ -71,13 +71,13 @@ async def start_local_bot_api():
                                 "18081"])
     
 
-async def wait_for_local_bot_api(BOT_TOKEN: str = os.getenv('BOT_TOKEN')):
+async def wait_for_local_bot_api():
     await start_local_bot_api()
     logger.info("Waiting for Telegram Bot API to start...")
     async with httpx.AsyncClient(timeout=timeout) as client:
         for count in range(30):
             try:
-                response = await client.get(f"http://127.0.0.1:18081/bot{BOT_TOKEN}/getMe")
+                response = await client.get(f"http://127.0.0.1:18081/bot{os.getenv('BOT_TOKEN')}/getMe")
                 if response.status_code < 500:
                     logger.info("Telegram Bot API started")
                     break

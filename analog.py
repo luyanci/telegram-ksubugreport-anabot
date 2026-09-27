@@ -31,7 +31,7 @@ def read_basic_txt(file_path):
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
     
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r',encoding='utf-8') as file:
         lines = file.readlines()
     
     return [line.strip() for line in lines]
@@ -62,19 +62,17 @@ def read_module_json(file_path):
     return data
 
 
-def process_basic_file(lines,lang_code):
-    def parse_line_value(line):
+def process_basic_files(basic_lines,prop_lines,lang_code):
+    def parse_line_value(line:str):
         parts = line.split(': ', 1)
-        return parts[1] if len(parts) >= 2 else ""
+        return parts[1].replace("[","").replace("]","") if len(parts) >= 2 else ""
     
-    content = "<blockquote expandable>"
-    for line in lines:
+    content = ""
+    for line in basic_lines:
         if line.startswith("Kernel:"):
             content += langs[lang_code]["kernel_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("FINGERPRINT:"):
             content += langs[lang_code]["fingerprint"].format(fingerprint=parse_line_value(line)) + "\n"
-        elif line.startswith("MODEL:"):
-            content += langs[lang_code]["device_model"].format(model=parse_line_value(line)) + "\n"
         elif line.startswith("PRODUCT:"):
             content += langs[lang_code]["device_codename"].format(codename=parse_line_value(line)) + "\n"
         elif line.startswith("Machine:"):
@@ -93,8 +91,18 @@ def process_basic_file(lines,lang_code):
             content += langs[lang_code]["kpatch_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("SafeMode:"):
             content += langs[lang_code]["safe_mode"].format(safemode=parse_line_value(line)) + "\n"
-        
-    return content + "</blockquote>\n"
+    marketkeys= [
+    "ro.vendor.oneplus.market.name"
+    "ro.vivo.market.name",
+    "ro.product.marketname",
+    "ro.config.marketing_name"
+    ]
+    
+    for line in prop_lines:
+        for key in marketkeys:
+            if line.startswith(f"[{key}]"):
+                content = langs[lang_code]["device_model"].format(model=parse_line_value(line)) + "\n" + content
+    return "<blockquote expandable>" + content + "</blockquote>\n"
 
 def process_defconfig_file(lines,lang_code):
     response = "<blockquote expandable>"
@@ -152,9 +160,13 @@ def process_file(file_path: str, lang_code: str,timestamp) -> str:
             defconfig_lines = read_defconfig_gz(f'extracted_files_{timestamp}/defconfig.gz')
         elif os.path.exists(f'extracted_files_{timestamp}/defconfig'):
             defconfig_lines = read_basic_txt(f'extracted_files_{timestamp}/defconfig')
+        if os.path.exists(f'extracted_files_{timestamp}/props.txt'):
+            prop_lines = read_basic_txt(f'extracted_files_{timestamp}/props.txt')
+        else:
+            prop_lines = []
         module_data = read_module_json(f'extracted_files_{timestamp}/modules.json')
         response += "basic.txt:\n"
-        response += process_basic_file(basic_lines, lang_code)
+        response += process_basic_files(basic_lines, prop_lines, lang_code)
         response += "defconfig:\n"
         response += process_defconfig_file(defconfig_lines, lang_code)
         response += f"{langs[lang_code]['modules_info']}\n"

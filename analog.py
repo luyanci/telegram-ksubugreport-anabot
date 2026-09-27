@@ -94,8 +94,8 @@ def process_basic_files(basic_lines,prop_lines,lang_code):
     
     
     marketkeys= [
-    "ro.vendor.oplus.market.name"
-    "ro.vendor.oplus.market.enname"
+    "ro.vendor.oplus.market.name",
+    "ro.vendor.oplus.market.enname",
     "ro.vivo.market.name",
     "ro.product.marketname",
     "ro.config.marketing_name"

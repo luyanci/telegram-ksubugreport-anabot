@@ -16,10 +16,23 @@ def unpack_tar_gz(file_path, output_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
     
     with tarfile.open(file_path, 'r:gz') as tar:
-            for file in tar.getmembers():
+            members = tar.getmembers()
+            paths = [file.name.rstrip('/').split('/') for file in members if file.name.rstrip('/')]
+            top_level = {parts[0] for parts in paths}
+            root_folder = next(iter(top_level)) if len(top_level) == 1 else None
+            has_root_folder = root_folder is not None and any(
+                file.isdir() and file.name.rstrip('/') == root_folder for file in members
+            )
+
+            for file in members:
                 # if file.size > MAX_FILE_SIZE:
                 #     logger.warning(f"Skipping extraction of {file.name} due to size > {MAX_FILE_SIZE} bytes.")
                 #     continue
+                member_name = file.name.rstrip('/')
+                if has_root_folder and member_name == root_folder:
+                    continue
+                if has_root_folder and member_name.startswith(f'{root_folder}/'):
+                    file.name = member_name[len(root_folder) + 1:]
                 try:
                     tar.extract(file, output_path)
                 except Exception as e:

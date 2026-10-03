@@ -151,7 +151,9 @@ def process_module_json(datas,lang_code):
         # HMA
         "hma_oss_zygisk",
         # One Key Hide related
-        "YH_YC"
+        "YH_YC",
+        # KernelPatch related
+        "Kpatch-Next",
     ]
     content = ""
     if len(datas) != 0:
@@ -161,9 +163,13 @@ def process_module_json(datas,lang_code):
                     content = "✅" + " [META] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n" + content
                 elif data.get('id') in suspicious_modules:
                     content += "⚠️" + " [SUS] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + " " +langs[lang_code]["suspicious_modules_tip"] + "\n"
-                elif data.get('id') == "zygisksu" and data.get('name') == "Zygisk Next":
-                    if "DE" in data.get('description'):
+                elif data.get('id') == "zygisksu":
+                    if data.get('name') == "Zygisk Next" and "DE" in data.get('description'):
                         content += "⚠️" + " [Enforce Denylist] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + " " +langs[lang_code]["suspicious_modules_tip"] + "\n"
+                    else:
+                        content += "✅" + " [ZYGISK] " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
+                elif data.get('id').lower()  == "":
+                    content += "⚠️" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + " " +langs[lang_code]["suspicious_modules_tip"] + "\n"
                 else:
                     content += "✅" + " " +  langs[lang_code]["module_details"].format(name=data.get('name'), version=data.get('version'), id=data.get('id')) + "\n"
             else:

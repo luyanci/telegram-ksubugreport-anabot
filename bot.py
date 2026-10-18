@@ -2,6 +2,8 @@ import logging
 import os
 import shutil
 import asyncio
+import html
+from html.parser import HTMLParser
 from telegram import Update,InputMediaDocument
 from telegram.constants import ChatAction
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
@@ -18,6 +20,70 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger("tgbot")
+
+
+class _TelegramMessageSplitter(HTMLParser):
+    _void_tags = {"br", "hr", "img"}
+
+    def __init__(self, limit: int):
+        super().__init__(convert_charrefs=False)
+        self.limit = limit
+        self.chunks = []
+        self.current = []
+        self.open_tags = []
+        self.visible_length = 0
+
+    def _flush(self):
+        self.chunks.append(
+            "".join(self.current + [closing for _, _, closing in reversed(self.open_tags)])
+        )
+        self.current = [opening for _, opening, _ in self.open_tags]
+        self.visible_length = 0
+
+    def _append_text(self, source: str, visible_text: str):
+        visible_length = sum(2 if ord(char) > 0xFFFF else 1 for char in visible_text)
+        if self.visible_length and self.visible_length + visible_length > self.limit:
+            self._flush()
+        self.current.append(source)
+        self.visible_length += visible_length
+
+    def handle_starttag(self, tag, attrs):
+        opening = self.get_starttag_text()
+        self.current.append(opening)
+        if tag not in self._void_tags:
+            self.open_tags.append((tag, opening, f"</{tag}>"))
+
+    def handle_startendtag(self, tag, attrs):
+        self.current.append(self.get_starttag_text())
+
+    def handle_endtag(self, tag):
+        self.current.append(f"</{tag}>")
+        if self.open_tags and self.open_tags[-1][0] == tag:
+            self.open_tags.pop()
+
+    def handle_data(self, data):
+        for char in data:
+            self._append_text(char, char)
+
+    def handle_entityref(self, name):
+        source = f"&{name};"
+        self._append_text(source, html.unescape(source))
+
+    def handle_charref(self, name):
+        source = f"&#{name};"
+        self._append_text(source, html.unescape(source))
+
+
+def split_telegram_message(text: str, limit: int = 4096) -> list[str]:
+    splitter = _TelegramMessageSplitter(limit)
+    splitter.feed(text)
+    splitter.close()
+    if splitter.visible_length or not splitter.chunks:
+        splitter.chunks.append(
+            "".join(splitter.current + [closing for _, _, closing in reversed(splitter.open_tags)])
+        )
+    return splitter.chunks
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
@@ -49,7 +115,8 @@ async def send_need_files(timestamp: int, lang_code: str, context: ContextTypes.
         await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['file_processing_error'].format(error=str(e)), context=context, update=update)
         return
     except NetworkError as e:
-        logger.error(f"Network error while sending files: {e}")
+        # This error often occurs when api take too long time to send files, so ignore it...
+        logger.warning(f"Network error while sending files: {e}")
         return
 
 async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,7 +137,13 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.debug(f"Downloading file from {file_url}")
         await file.download_to_drive(file_path)
         response = "Results:\n" + analog.process_file(file_path, f"{update.effective_user.language_code if update.effective_user.language_code in analog.langs else 'en'}",timestamp)
-        await edit_message_text(msg, response)
+        response_chunks = split_telegram_message(response)
+        if len(response_chunks) > 1:
+            await edit_message_text(msg, response_chunks[0])
+            for chunk in response_chunks[1:]:
+                await send_message(chat_id=update.effective_chat.id, text=chunk, context=context, update=update)
+        else:
+            await edit_message_text(msg, response)
         await send_need_files(timestamp, lang_code, context, update)
     except BadRequest as e:
         logger.error(f"Failed to download file: {e}")

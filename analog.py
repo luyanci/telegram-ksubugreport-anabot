@@ -3,7 +3,7 @@ import gzip
 import json
 import logging
 from locates import langs
-
+from device_helper import model_datas
 MAX_FILE_SIZE= 50*1024*1024  # 50 MB
 
 logger = logging.getLogger(__name__)
@@ -74,8 +74,23 @@ def read_module_json(file_path):
     
     return data
 
+def search_device(device_figure:str,device_codename:str,device_model:str):
+    device_figure_sp = device_figure.split('/')
+    logger.info(f"Searching device for {device_figure}")
+    for model_data in model_datas:
+        if device_model == model_data[0]:
+            return model_data[3]
+        elif device_figure_sp[0].lower() == model_data[1].lower():
+            if device_codename == model_data[2] or device_figure_sp[1] == model_data[2]:
+                return model_data[3]
+    return device_model
 
 def process_basic_files(basic_lines,prop_lines,lang_code):
+    
+    device_figure = ""
+    device_codename = ""
+    device_model = ""
+    
     def parse_line_value(line:str):
         parts = line.split(': ', 1)
         return parts[1].replace("[","").replace("]","") if len(parts) >= 2 else ""
@@ -85,9 +100,13 @@ def process_basic_files(basic_lines,prop_lines,lang_code):
         if line.startswith("Kernel:"):
             content += langs[lang_code]["kernel_version"].format(version=parse_line_value(line)) + "\n"
         elif line.startswith("FINGERPRINT:"):
+            device_figure = parse_line_value(line)
             content += langs[lang_code]["fingerprint"].format(fingerprint=parse_line_value(line)) + "\n"
         elif line.startswith("PRODUCT:"):
+            device_codename = parse_line_value(line)
             content += langs[lang_code]["device_codename"].format(codename=parse_line_value(line)) + "\n"
+        elif line.startswith("MODEL:"):
+            device_model = parse_line_value(line)
         elif line.startswith("Machine:"):
             content += langs[lang_code]["device_arch"].format(arch=parse_line_value(line)) + "\n"
         elif line.startswith("SELinux:"):
@@ -119,11 +138,18 @@ def process_basic_files(basic_lines,prop_lines,lang_code):
         completed = False
         for key in marketkeys:
             if line.startswith(f"[{key}]"):
-                content = langs[lang_code]["device_model"].format(model=parse_line_value(line)) + "\n" + content
-                completed = True
-                break
+                result = parse_line_value(line)
+                if result != device_model:
+                    content = langs[lang_code]["device_model"].format(model=result) + "\n" + content
+                    completed = True
+                    break
+                else:
+                    break
         if completed:
             break
+    if not completed:
+        device_model = search_device(device_figure,device_codename,device_model)
+        content = langs[lang_code]["device_model"].format(model=device_model) + "\n" + content
     return "<blockquote expandable>" + content + "</blockquote>\n"
 
 def process_defconfig_file(lines,lang_code):
@@ -154,6 +180,8 @@ def process_module_json(datas,lang_code):
         "YH_YC",
         # KernelPatch related
         "Kpatch-Next",
+        # make user confusing
+        "zygisknextsu",
     ]
     content = ""
     if len(datas) != 0:

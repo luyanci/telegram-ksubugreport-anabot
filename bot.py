@@ -85,6 +85,74 @@ def split_telegram_message(text: str, limit: int = 4096) -> list[str]:
     return splitter.chunks
 
 
+def get_device_info(command_args: list[str], lang_code: str = 'en') -> str:
+    import device_helper
+
+    query = " ".join(command_args).strip().casefold()
+    if not query:
+        return langs[lang_code]['whatis_usage']
+
+    matches = []
+    for model_data in device_helper.model_datas:
+        fields = [value.strip() for value in model_data[:4] if value]
+        if any(value.casefold() == query for value in fields):
+            matches.append(model_data)
+
+    if not matches:
+        query_terms = query.split()
+        matches = [
+            model_data
+            for model_data in device_helper.model_datas
+            if all(term in " ".join(model_data[:4]).casefold() for term in query_terms)
+        ]
+
+    if not matches:
+        return langs[lang_code]['whatis_not_found'].format(query=html.escape(" ".join(command_args).strip()))
+
+    grouped_matches = {}
+    for model_data in matches:
+        model, brand, code_alias, name, _version_name = model_data
+        result_key = (brand.casefold(), name.casefold()) if name else (
+            brand.casefold(),
+            code_alias.casefold(),
+            model.casefold(),
+        )
+        if result_key not in grouped_matches:
+            grouped_matches[result_key] = {
+                'models': [],
+                'brand': brand,
+                'code_aliases': [],
+                'name': name,
+            }
+        group = grouped_matches[result_key]
+        if model and model not in group['models']:
+            group['models'].append(model)
+        if code_alias and code_alias not in group['code_aliases']:
+            group['code_aliases'].append(code_alias)
+
+    result_limit = 10
+    result_lines = []
+    grouped_results = list(grouped_matches.values())
+    for group in grouped_results[:result_limit]:
+        result_lines.append(
+            langs[lang_code]['whatis_result_item'].format(
+                model=html.escape(", ".join(group['models'])),
+                brand=html.escape(group['brand']),
+                code_alias=html.escape(", ".join(group['code_aliases']) or "-"),
+                name=html.escape(group['name']),
+            )
+        )
+
+    result = langs[lang_code]['whatis_results'].format(
+        query=html.escape(" ".join(command_args).strip()),
+        results="\n".join(result_lines),
+    )
+    if len(grouped_results) > result_limit:
+        result += "\n" + langs[lang_code]['whatis_more_results'].format(
+            count=len(grouped_results) - result_limit
+        )
+    return result
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
     await send_message(chat_id=update.effective_chat.id, text=langs[lang_code]['start_message'], context=context, update=update)
@@ -166,7 +234,13 @@ async def logcheck(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # delete file which is api downloaded
             os.remove(file_url)
         logger.info("{}_{}: Cleaned up extracted files and downloaded file.".format(chatid,timestamp))
-    
+
+async def whatis_device(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang_code = update.effective_user.language_code if update.effective_user.language_code in langs else 'en'
+    response = get_device_info(context.args, lang_code)
+    await send_message(chat_id=update.effective_chat.id, text=response, context=context, update=update)
+
+
 if __name__ == '__main__':
     asyncio.run(wait_for_local_bot_api())
     
@@ -177,8 +251,10 @@ if __name__ == '__main__':
         .build()
     start_handler = CommandHandler('start', start)
     logcheck_handler = CommandHandler('checklog', logcheck)
+    whatis_device_handler = CommandHandler('whatis', whatis_device)
     application.add_handler(start_handler)
     application.add_handler(logcheck_handler)
+    application.add_handler(whatis_device_handler)
     try:
         application.run_polling()
     finally:

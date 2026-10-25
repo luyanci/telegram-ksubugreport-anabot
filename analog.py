@@ -79,10 +79,10 @@ def search_device(device_figure:str,device_codename:str,device_model:str):
     logger.info(f"Searching device for {device_figure}")
     for model_data in model_datas:
         if device_model == model_data[0]:
-            return model_data[3]
+            return model_data[3] + " " + model_data[4]
         elif device_figure_sp[0].lower() == model_data[1].lower():
             if device_codename == model_data[2] or device_figure_sp[1] == model_data[2]:
-                return model_data[3]
+                return model_data[3] + " " + model_data[4]
     return device_model
 
 def process_basic_files(basic_lines,prop_lines,lang_code):

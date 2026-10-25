@@ -1,5 +1,10 @@
 {
     "start_message": "I'm a KernelSU bug report analyzer bot, please talk to me!",
+    "whatis_usage": "Usage: /whatis [model, brand, codename, or device name]\nExample: /whatis xiaomi phoenix",
+    "whatis_not_found": "No device found for: {query}",
+    "whatis_results": "Device search results for <b>{query}</b>:\n{results}",
+    "whatis_result_item": "<code>{model}</code> | brand: {brand} | codename: {code_alias} | {name}",
+    "whatis_more_results": "...and {count} more results. Try a more specific search.",
     "logcheck_message": "Checking logs...",
     "no_file_error": "Please reply to a message containing the log file.",
     "file_processing_error": "Error processing file: {error}",

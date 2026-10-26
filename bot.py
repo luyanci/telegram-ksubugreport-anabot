@@ -103,7 +103,15 @@ def get_device_info(command_args: list[str], lang_code: str = 'en') -> str:
         matches = [
             model_data
             for model_data in device_helper.model_datas
-            if all(term in " ".join(model_data[:4]).casefold() for term in query_terms)
+            if all(
+                term in " ".join(model_data[:2] + model_data[3:4]).casefold()
+                or term in {
+                    alias.strip().casefold()
+                    for alias in model_data[2].split(",")
+                    if alias.strip()
+                }
+                for term in query_terms
+            )
         ]
 
     if not matches:

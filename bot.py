@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 load_dotenv()
 from botapi import send_message, send_document_grp, edit_message_text,kill_local_bot_api, wait_for_local_bot_api
 import analog
+import device_helper
+
 from locates import langs
 
 
@@ -86,7 +88,6 @@ def split_telegram_message(text: str, limit: int = 4096) -> list[str]:
 
 
 def get_device_info(command_args: list[str], lang_code: str = 'en') -> str:
-    import device_helper
 
     query = " ".join(command_args).strip().casefold()
     if not query:
@@ -248,6 +249,9 @@ async def whatis_device(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = get_device_info(context.args, lang_code)
     await send_message(chat_id=update.effective_chat.id, text=response, context=context, update=update)
 
+async def refresh_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await device_helper.refresh_model_data()
+    await send_message(chat_id=update.effective_chat.id, text="Device model data refreshed.", context=context, update=update)
 
 if __name__ == '__main__':
     asyncio.run(wait_for_local_bot_api())
@@ -260,9 +264,11 @@ if __name__ == '__main__':
     start_handler = CommandHandler('start', start)
     logcheck_handler = CommandHandler('checklog', logcheck)
     whatis_device_handler = CommandHandler('whatis', whatis_device)
+    refresh_data_handler = CommandHandler('refresh_models', refresh_data)
     application.add_handler(start_handler)
     application.add_handler(logcheck_handler)
     application.add_handler(whatis_device_handler)
+    application.add_handler(refresh_data_handler)
     try:
         application.run_polling()
     finally:
